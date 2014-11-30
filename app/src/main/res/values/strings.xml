@@ -2,7 +2,11 @@
 <resources>
 
     <string name="app_name">Glass Music Remote</string>
+    <string name="app_started">Glass Music Remote started</string>
+
+    <string name="previous_action">Previous</string>
+    <string name="next_action">Next</string>
+
     <string name="currently_playing">Currently playing</string>
-    <string name="action_settings">Settings</string>
 
 </resources>

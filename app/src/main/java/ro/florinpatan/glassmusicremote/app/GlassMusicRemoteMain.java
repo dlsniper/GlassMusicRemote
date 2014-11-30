@@ -27,7 +27,7 @@ public class GlassMusicRemoteMain extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         startService(new Intent(this, GlassMusicRemoteService.class));
-        Toast.makeText(this, "Glass Music Remote started", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.app_started, Toast.LENGTH_SHORT).show();
         moveTaskToBack(true);
     }
 

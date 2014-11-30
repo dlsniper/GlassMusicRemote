@@ -44,8 +44,6 @@ public class GlassMusicRemoteService extends Service {
 
     Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-    private PendingIntent togglePausePendingIntent, prevPendingIntent, nextPendingIntent;
-
     private static GoogleApiClient googleApiClient;
 
     private BroadcastReceiver songChangedReceiver = new BroadcastReceiver() {
@@ -79,7 +77,7 @@ public class GlassMusicRemoteService extends Service {
                             new NotificationCompat.Builder(myContext)
                                     .setSmallIcon(R.drawable.ic_launcher)
                                     .setAutoCancel(true)
-                                    .setContentTitle("Currently playing")
+                                    .setContentTitle(getString(R.string.currently_playing))
                                     .setContentText(information)
                                     .setNumber(++notificationNumber)
                                     .setSound(soundUri)
@@ -168,13 +166,25 @@ public class GlassMusicRemoteService extends Service {
 
         myContext = this;
 
-        prevPendingIntent        = PendingIntent.getBroadcast(myContext, 0, prevIntent, 0);
-        //togglePausePendingIntent = PendingIntent.getBroadcast(myContext, 0, togglePauseIntent, 0);
-        nextPendingIntent        = PendingIntent.getBroadcast(myContext, 0, nextIntent, 0);
+        PendingIntent prevPendingIntent = PendingIntent.getBroadcast(myContext, 0, prevIntent, 0);
+        //PendingIntent togglePausePendingIntent = PendingIntent.getBroadcast(myContext, 0, togglePauseIntent, 0);
+        PendingIntent nextPendingIntent = PendingIntent.getBroadcast(myContext, 0, nextIntent, 0);
 
-        prevNot        = new NotificationCompat.Action(R.drawable.ic_music_previous_50, "Previous", prevPendingIntent);
-        //togglePauseNot = new NotificationCompat.Action(R.drawable.pause, "Toggle Pause", togglePausePendingIntent);
-        nextNot        = new NotificationCompat.Action(R.drawable.ic_music_next_50, "Next", nextPendingIntent);
+        prevNot        = new NotificationCompat.Action.Builder(R.drawable.ic_music_previous_50,
+                getString(R.string.previous_action), prevPendingIntent)
+                .build()
+        ;
+
+        /*togglePauseNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_pause_50,
+                getString(R.string.togglepause_action), togglePausePendingIntent)
+                .addRemoteInput(remoteInput)
+                .build()
+        ;*/
+
+        nextNot        = new NotificationCompat.Action.Builder(R.drawable.ic_music_next_50,
+                getString(R.string.next_action), nextPendingIntent)
+                .build()
+        ;
 
         setupMusicReceiver();
     }
