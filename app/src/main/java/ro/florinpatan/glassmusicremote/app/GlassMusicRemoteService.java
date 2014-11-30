@@ -11,6 +11,9 @@ import android.net.Uri;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.TextView;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.Node;
@@ -49,7 +52,8 @@ public class GlassMusicRemoteService extends Service {
         @Override
         public void onReceive(Context context, final Intent intent) {
 
-            final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes = Wearable.NodeApi.getConnectedNodes(googleApiClient);
+            final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes =
+                    Wearable.NodeApi.getConnectedNodes(googleApiClient);
             connectedNodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult connectedNodesResult) {
@@ -93,7 +97,8 @@ public class GlassMusicRemoteService extends Service {
         @Override
         public void onReceive(Context context, final Intent intent) {
 
-            final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes = Wearable.NodeApi.getConnectedNodes(googleApiClient);
+            final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes =
+                    Wearable.NodeApi.getConnectedNodes(googleApiClient);
             connectedNodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult connectedNodesResult) {
@@ -105,8 +110,7 @@ public class GlassMusicRemoteService extends Service {
                     if (!intent.getBooleanExtra("playstate", false) &&
                             !intent.getBooleanExtra("playing", false)
                             ) {
-                        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(myContext);
-                        notificationManager.cancel(notificationId);
+                        clearNotification();
                     }
                 }
             });
@@ -170,6 +174,37 @@ public class GlassMusicRemoteService extends Service {
         registerReceiver(songKeysReceiver, songKeysFilter);
     }
 
+    private void changePlayState(String playState) {
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        View mainActivity = inflater.inflate(R.layout.activity_main, null);
+        TextView appState = (TextView) mainActivity.findViewById(R.id.appState);
+        appState.setText(getString(R.string.app_state, playState));
+    }
+
+    private void clearNotification() {
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(myContext);
+        notificationManager.cancel(notificationId);
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        isServiceRunning = true;
+
+        changePlayState(getString(R.string.app_state_running));
+
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
+    public boolean stopService(Intent name) {
+        isServiceRunning = false;
+
+        changePlayState(getString(R.string.app_state_stopped));
+        clearNotification();
+
+        return super.stopService(name);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -205,9 +240,14 @@ public class GlassMusicRemoteService extends Service {
 
     @Override
     public void onDestroy() {
+        isServiceRunning = false;
+
+        changePlayState(getString(R.string.app_state_stopped));
+        clearNotification();
 
         unregisterReceiver(songChangedReceiver);
         unregisterReceiver(songKeysReceiver);
+        unregisterReceiver(songStateChangedReceiver);
 
         googleApiClient.disconnect();
 

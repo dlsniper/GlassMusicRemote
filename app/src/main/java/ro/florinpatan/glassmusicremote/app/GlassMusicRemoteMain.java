@@ -18,28 +18,119 @@ package ro.florinpatan.glassmusicremote.app;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.os.Handler;
+import android.view.View;
+import android.widget.Switch;
+import android.widget.TextView;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class GlassMusicRemoteMain extends Activity {
+
+
+    public static final String PREF_FILENAME = "GlassMusicRemote";
+    private boolean runOnStartup = true;
+    private boolean enabled = true;
+
+    public void onEnabledClicked(View view) {
+        Switch runOnStartupSwitch = (Switch) findViewById(R.id.runOnStartup);
+
+        boolean checked = ((Switch) view).isChecked();
+
+        runOnStartupSwitch.setEnabled(checked);
+        enabled = checked;
+
+        if (!checked) {
+            runOnStartupSwitch.setChecked(false);
+            runOnStartup = false;
+
+            stopService(new Intent(this, GlassMusicRemoteService.class));
+            changePlayState(getString(R.string.app_state_stopped));
+        } else {
+            startService(new Intent(this, GlassMusicRemoteService.class));
+            changePlayState(getString(R.string.app_state_running));
+        }
+    }
+
+    public void onRunOnStartupClicked(View view) {
+        runOnStartup = ((Switch) view).isChecked();
+    }
+
+    private void changePlayState(String playState) {
+        TextView appState = (TextView) findViewById(R.id.appState);
+        appState.setText(getString(R.string.app_state, playState));
+    }
+
+    private void saveSettings() {
+        SharedPreferences.Editor editor = getSharedPreferences(PREF_FILENAME, 0).edit();
+        editor.putBoolean("enabled", enabled);
+        editor.putBoolean("runOnStartup", runOnStartup);
+        editor.commit();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        String toastMessage = getResources().getString(R.string.app_already_running, getString(R.string.app_name));
-        if (!GlassMusicRemoteService.isServiceRunning) {
-            GlassMusicRemoteService.isServiceRunning = true;
+        SharedPreferences settings = getSharedPreferences(PREF_FILENAME, 0);
+        enabled = settings.getBoolean("enabled", true);
+        runOnStartup = settings.getBoolean("runOnStartup", true);
+
+        if (enabled && !GlassMusicRemoteService.isServiceRunning) {
             startService(new Intent(this, GlassMusicRemoteService.class));
-            toastMessage = getResources().getString(R.string.app_started, getString(R.string.app_name));
         }
 
-        Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
-        finish();
+        setContentView(R.layout.activity_main);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Switch enabledSwitch = (Switch) findViewById(R.id.enabled);
+        Switch runOnStartupSwitch = (Switch) findViewById(R.id.runOnStartup);
+
+        enabledSwitch.setChecked(enabled);
+        runOnStartupSwitch.setChecked(runOnStartup);
+        if (!enabled) {
+            runOnStartupSwitch.setEnabled(enabled);
+        }
+
+        changePlayState("---");
+
+        final Handler handler = new Handler();
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        String playState = GlassMusicRemoteService.isServiceRunning ?
+                                getString(R.string.app_state_running) :
+                                getString(R.string.app_state_stopped);
+                        changePlayState(playState);
+                    }
+                });
+            }}, 1200);
+    }
+
+    @Override
+    protected void onStop(){
+        saveSettings();
+
+        super.onStop();
     }
 
     @Override
     protected void onDestroy() {
+        saveSettings();
+
         super.onDestroy();
     }
 }

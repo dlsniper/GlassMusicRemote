@@ -4,10 +4,15 @@
     <string name="app_name" translatable="false">Glass Music Remote</string>
     <string name="app_started">%1$s started</string>
     <string name="app_already_running">%1$s is already running</string>
+    <string name="app_enabled">Enabeld</string>
+    <string name="app_run_on_startup">Run on phone start</string>
+
+    <string name="app_state">Current state: %1$s</string>
+    <string name="app_state_running">running</string>
+    <string name="app_state_stopped">stopped</string>
 
     <string name="previous_action">Previous</string>
     <string name="next_action">Next</string>
-
     <string name="currently_playing">Currently playing</string>
 
 </resources>

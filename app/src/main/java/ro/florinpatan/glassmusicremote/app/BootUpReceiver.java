@@ -19,6 +19,7 @@ package ro.florinpatan.glassmusicremote.app;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 
 /**
  * @author Florin Patan
@@ -31,9 +32,13 @@ public class BootUpReceiver extends BroadcastReceiver {
             return;
         }
 
-        Intent serviceIntent = new Intent(context, GlassMusicRemoteService.class);
-        context.startService(serviceIntent);
-        GlassMusicRemoteService.isServiceRunning = true;
+        SharedPreferences settings = context.getSharedPreferences(GlassMusicRemoteMain.PREF_FILENAME, 0);
+        boolean runOnStartup = settings.getBoolean("runOnStartup", false);
+        if (!runOnStartup) {
+            return;
+        }
+
+        context.startService(new Intent(context, GlassMusicRemoteService.class));
     }
 
 }
