@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ro.florinpatan.glassmusicremote.app" >
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -12,6 +14,17 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version"
             />
+
+        <receiver
+            android:enabled="true"
+            android:exported="true"
+            android:name="ro.florinpatan.glassmusicremote.app.BootUpReceiver"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name="ro.florinpatan.glassmusicremote.app.GlassMusicRemoteMain"

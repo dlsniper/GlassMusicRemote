@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Glass Music Remote</string>
-    <string name="app_started">Glass Music Remote started</string>
+    <string name="app_name" translatable="false">Glass Music Remote</string>
+    <string name="app_started">%1$s started</string>
+    <string name="app_already_running">%1$s is already running</string>
 
     <string name="previous_action">Previous</string>
     <string name="next_action">Next</string>

@@ -26,14 +26,20 @@ public class GlassMusicRemoteMain extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        startService(new Intent(this, GlassMusicRemoteService.class));
-        Toast.makeText(this, R.string.app_started, Toast.LENGTH_SHORT).show();
-        moveTaskToBack(true);
+
+        String toastMessage = getResources().getString(R.string.app_already_running, getString(R.string.app_name));
+        if (!GlassMusicRemoteService.isServiceRunning) {
+            GlassMusicRemoteService.isServiceRunning = true;
+            startService(new Intent(this, GlassMusicRemoteService.class));
+            toastMessage = getResources().getString(R.string.app_started, getString(R.string.app_name));
+        }
+
+        Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
+        finish();
     }
 
     @Override
     protected void onDestroy() {
-        stopService(new Intent(this, GlassMusicRemoteService.class));
         super.onDestroy();
     }
 }

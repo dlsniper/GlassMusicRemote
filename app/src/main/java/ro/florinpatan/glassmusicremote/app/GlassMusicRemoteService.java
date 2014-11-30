@@ -24,13 +24,15 @@ import java.util.List;
  */
 public class GlassMusicRemoteService extends Service {
 
+    public static boolean isServiceRunning = false;
+
     private static boolean isPlaying = true;
     private static int notificationId = 0;
     private static int notificationNumber = 0;
 
-    public static final String KEY_TOGGLEPAUSE = "ro.florinpatan.glassmusicremote.app.togglepause";
-    public static final String KEY_PREV        = "ro.florinpatan.glassmusicremote.app.prevSong";
-    public static final String KEY_NEXT        = "ro.florinpatan.glassmusicremote.app.nextSong";
+    private static final String KEY_TOGGLEPAUSE = "ro.florinpatan.glassmusicremote.app.togglepause";
+    private static final String KEY_PREV        = "ro.florinpatan.glassmusicremote.app.prevSong";
+    private static final String KEY_NEXT        = "ro.florinpatan.glassmusicremote.app.nextSong";
 
     private static Context myContext;
 
