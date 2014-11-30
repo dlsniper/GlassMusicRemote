@@ -88,6 +88,31 @@ public class GlassMusicRemoteService extends Service {
         }
     };
 
+    private BroadcastReceiver songStateChangedReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, final Intent intent) {
+
+            final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes = Wearable.NodeApi.getConnectedNodes(googleApiClient);
+            connectedNodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                @Override
+                public void onResult(NodeApi.GetConnectedNodesResult connectedNodesResult) {
+                    List<Node> nodes = connectedNodesResult.getNodes();
+                    if (nodes.size() == 0) {
+                        return;
+                    }
+
+                    if (!intent.getBooleanExtra("playstate", false) &&
+                            !intent.getBooleanExtra("playing", false)
+                            ) {
+                        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(myContext);
+                        notificationManager.cancel(notificationId);
+                    }
+                }
+            });
+        }
+    };
+
     BroadcastReceiver songKeysReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -133,6 +158,10 @@ public class GlassMusicRemoteService extends Service {
         songChangedFilter.addAction("com.andrew.apollo.metachanged");
 
         registerReceiver(songChangedReceiver, songChangedFilter);
+
+        IntentFilter songStateChangedFilter = new IntentFilter();
+        songStateChangedFilter.addAction("com.android.music.playstatechanged");
+        registerReceiver(songStateChangedReceiver, songStateChangedFilter);
 
         IntentFilter songKeysFilter = new IntentFilter();
         songKeysFilter.addAction(KEY_PREV);
