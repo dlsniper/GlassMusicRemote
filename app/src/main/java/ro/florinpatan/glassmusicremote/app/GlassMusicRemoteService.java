@@ -26,22 +26,18 @@ public class GlassMusicRemoteService extends Service {
 
     public static boolean isServiceRunning = false;
 
-    private static boolean isPlaying = true;
     private static int notificationId = 0;
     private static int notificationNumber = 0;
 
-    private static final String KEY_TOGGLEPAUSE = "ro.florinpatan.glassmusicremote.app.togglepause";
-    private static final String KEY_PREV        = "ro.florinpatan.glassmusicremote.app.prevSong";
-    private static final String KEY_NEXT        = "ro.florinpatan.glassmusicremote.app.nextSong";
+    private static final String KEY_PREV = "ro.florinpatan.glassmusicremote.app.prevSong";
+    private static final String KEY_NEXT = "ro.florinpatan.glassmusicremote.app.nextSong";
 
     private static Context myContext;
 
-    private static Intent prevIntent        = new Intent(KEY_PREV);
-    //private static Intent togglePauseIntent = new Intent(KEY_TOGGLEPAUSE);
-    private static Intent nextIntent        = new Intent(KEY_NEXT);
+    private static Intent prevIntent = new Intent(KEY_PREV);
+    private static Intent nextIntent = new Intent(KEY_NEXT);
 
     private static NotificationCompat.Action nextNot;
-    //private static NotificationCompat.Action togglePauseNot;
     private static NotificationCompat.Action prevNot;
 
     Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
@@ -71,7 +67,6 @@ public class GlassMusicRemoteService extends Service {
                             new NotificationCompat.WearableExtender()
                                     .setHintHideIcon(true)
                                     .addAction(nextNot)
-                                    //.addAction(togglePauseNot) for now we have to hide this as it's not working
                                     .addAction(prevNot)
                             ;
 
@@ -96,22 +91,12 @@ public class GlassMusicRemoteService extends Service {
     BroadcastReceiver songKeysReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // We want this because we can easily support other services in the future as well
+
             String command = "";
             String sendIntent = "com.android.music.musicservicecommand";
 
             switch (intent.getAction()) {
-                case KEY_TOGGLEPAUSE: {
-                    if (isPlaying) {
-                        command = "pause";
-                        sendIntent = "com.android.music.musicservicecommand";
-                    } else {
-                        command = "play";
-                        sendIntent = "com.android.music.musicservicecommand";
-                    }
-
-                    isPlaying = !isPlaying;
-                } break;
-
                 case KEY_PREV: {
                     command = "previous";
                 } break;
@@ -169,21 +154,14 @@ public class GlassMusicRemoteService extends Service {
         myContext = this;
 
         PendingIntent prevPendingIntent = PendingIntent.getBroadcast(myContext, 0, prevIntent, 0);
-        //PendingIntent togglePausePendingIntent = PendingIntent.getBroadcast(myContext, 0, togglePauseIntent, 0);
         PendingIntent nextPendingIntent = PendingIntent.getBroadcast(myContext, 0, nextIntent, 0);
 
-        prevNot        = new NotificationCompat.Action.Builder(R.drawable.ic_music_previous_50,
+        prevNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_previous_50,
                 getString(R.string.previous_action), prevPendingIntent)
                 .build()
         ;
 
-        /*togglePauseNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_pause_50,
-                getString(R.string.togglepause_action), togglePausePendingIntent)
-                .addRemoteInput(remoteInput)
-                .build()
-        ;*/
-
-        nextNot        = new NotificationCompat.Action.Builder(R.drawable.ic_music_next_50,
+        nextNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_next_50,
                 getString(R.string.next_action), nextPendingIntent)
                 .build()
         ;
@@ -205,7 +183,6 @@ public class GlassMusicRemoteService extends Service {
         googleApiClient.disconnect();
 
         myContext = null;
-        googleApiClient.disconnect();
 
         super.onDestroy();
     }
