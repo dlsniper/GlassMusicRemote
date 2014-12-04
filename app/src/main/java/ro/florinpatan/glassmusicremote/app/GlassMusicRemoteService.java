@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 Florin Patan
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package ro.florinpatan.glassmusicremote.app;
 
 import android.app.PendingIntent;
@@ -29,8 +45,12 @@ public class GlassMusicRemoteService extends Service {
 
     public static boolean isServiceRunning = false;
 
-    private static int notificationId = 0;
+    private static int phoneNotificationId = 0;
+    private static int glassNotificationId = 1;
     private static int notificationNumber = 0;
+
+    private String notificationContentTitle;
+    private String notificationGroupName;
 
     private static final String KEY_PREV = "ro.florinpatan.glassmusicremote.app.prevSong";
     private static final String KEY_NEXT = "ro.florinpatan.glassmusicremote.app.nextSong";
@@ -40,12 +60,12 @@ public class GlassMusicRemoteService extends Service {
     private static Intent prevIntent = new Intent(KEY_PREV);
     private static Intent nextIntent = new Intent(KEY_NEXT);
 
-    private static NotificationCompat.Action nextNot;
-    private static NotificationCompat.Action prevNot;
-
-    Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+    private static Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
     private static GoogleApiClient googleApiClient;
+
+    private static NotificationManagerCompat notificationManager;
+    private static NotificationCompat.WearableExtender wearableExtender;
 
     private BroadcastReceiver songChangedReceiver = new BroadcastReceiver() {
 
@@ -54,6 +74,7 @@ public class GlassMusicRemoteService extends Service {
 
             final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes =
                     Wearable.NodeApi.getConnectedNodes(googleApiClient);
+
             connectedNodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult connectedNodesResult) {
@@ -65,28 +86,33 @@ public class GlassMusicRemoteService extends Service {
                     String artist = intent.getStringExtra("artist");
                     String album = intent.getStringExtra("album");
                     String track = intent.getStringExtra("track");
-                    String information = String.format("%s - %s (album %s)", artist, track, album);
+                    String notificationContent = String.format("%s - %s (album %s)", artist, track, album);
 
-                    NotificationCompat.WearableExtender wearableExtender =
-                            new NotificationCompat.WearableExtender()
-                                    .setHintHideIcon(true)
-                                    .addAction(nextNot)
-                                    .addAction(prevNot)
-                            ;
+                    NotificationCompat.Builder phoneNotificationBuilder = new NotificationCompat.Builder(myContext)
+                            .setSmallIcon(R.drawable.ic_launcher)
+                            .setContentTitle(notificationContentTitle)
+                            .setContentText(notificationContent)
+                            .setNumber(++notificationNumber)
+                            .setSound(soundUri)
+                            .setOngoing(true)
+                            .setOnlyAlertOnce(true)
+                            .setGroup(notificationGroupName)
+                            .setGroupSummary(true);
 
-                    NotificationCompat.Builder notificationBuilder =
-                            new NotificationCompat.Builder(myContext)
-                                    .setSmallIcon(R.drawable.ic_launcher)
-                                    .setAutoCancel(true)
-                                    .setContentTitle(getString(R.string.currently_playing))
-                                    .setContentText(information)
-                                    .setNumber(++notificationNumber)
-                                    .setSound(soundUri)
-                                    .extend(wearableExtender)
-                            ;
+                    NotificationCompat.Builder wearableNotificationBuilder = new NotificationCompat.Builder(myContext)
+                            .setSmallIcon(R.drawable.ic_launcher)
+                            .setAutoCancel(true)
+                            .setContentTitle(notificationContentTitle)
+                            .setContentText(notificationContent)
+                            .setNumber(++notificationNumber)
+                            .setSound(soundUri)
+                            .extend(wearableExtender)
+                            .setOngoing(false)
+                            .setGroup(notificationGroupName)
+                            .setGroupSummary(false);
 
-                    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(myContext);
-                    notificationManager.notify(notificationId, notificationBuilder.build());
+                    notificationManager.notify(phoneNotificationId, phoneNotificationBuilder.build());
+                    notificationManager.notify(glassNotificationId, wearableNotificationBuilder.build());
                 }
             });
         }
@@ -99,6 +125,7 @@ public class GlassMusicRemoteService extends Service {
 
             final com.google.android.gms.common.api.PendingResult<NodeApi.GetConnectedNodesResult> connectedNodes =
                     Wearable.NodeApi.getConnectedNodes(googleApiClient);
+
             connectedNodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
                 @Override
                 public void onResult(NodeApi.GetConnectedNodesResult connectedNodesResult) {
@@ -183,7 +210,7 @@ public class GlassMusicRemoteService extends Service {
 
     private void clearNotification() {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(myContext);
-        notificationManager.cancel(notificationId);
+        notificationManager.cancel(phoneNotificationId);
     }
 
     @Override
@@ -209,6 +236,9 @@ public class GlassMusicRemoteService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        notificationContentTitle = getString(R.string.currently_playing);
+        notificationGroupName = getString(R.string.app_name);
+
         googleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
                 .build();
@@ -220,14 +250,20 @@ public class GlassMusicRemoteService extends Service {
         PendingIntent prevPendingIntent = PendingIntent.getBroadcast(myContext, 0, prevIntent, 0);
         PendingIntent nextPendingIntent = PendingIntent.getBroadcast(myContext, 0, nextIntent, 0);
 
-        prevNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_previous_50,
+        NotificationCompat.Action prevNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_previous_50,
                 getString(R.string.previous_action), prevPendingIntent)
-                .build()
-        ;
+                .build();
 
-        nextNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_next_50,
+        NotificationCompat.Action nextNot = new NotificationCompat.Action.Builder(R.drawable.ic_music_next_50,
                 getString(R.string.next_action), nextPendingIntent)
-                .build()
+                .build();
+
+        notificationManager = NotificationManagerCompat.from(myContext);
+
+        wearableExtender = new NotificationCompat.WearableExtender()
+                        .setHintHideIcon(true)
+                        .addAction(nextNot)
+                        .addAction(prevNot)
         ;
 
         setupMusicReceiver();
