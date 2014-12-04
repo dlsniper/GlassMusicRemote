@@ -44,6 +44,7 @@ import java.util.List;
 public class GlassMusicRemoteService extends Service {
 
     public static boolean isServiceRunning = false;
+    public static String notificationLayout = "%listpos%. %artist% - %title% (album %album%) %length%";
 
     private static int phoneNotificationId = 0;
     private static int glassNotificationId = 1;
@@ -83,36 +84,7 @@ public class GlassMusicRemoteService extends Service {
                         return;
                     }
 
-                    String artist = intent.getStringExtra("artist");
-                    String album = intent.getStringExtra("album");
-                    String track = intent.getStringExtra("track");
-                    String notificationContent = String.format("%s - %s (album %s)", artist, track, album);
-
-                    NotificationCompat.Builder phoneNotificationBuilder = new NotificationCompat.Builder(myContext)
-                            .setSmallIcon(R.drawable.ic_launcher)
-                            .setContentTitle(notificationContentTitle)
-                            .setContentText(notificationContent)
-                            .setNumber(++notificationNumber)
-                            .setSound(soundUri)
-                            .setOngoing(true)
-                            .setOnlyAlertOnce(true)
-                            .setGroup(notificationGroupName)
-                            .setGroupSummary(true);
-
-                    NotificationCompat.Builder wearableNotificationBuilder = new NotificationCompat.Builder(myContext)
-                            .setSmallIcon(R.drawable.ic_launcher)
-                            .setAutoCancel(true)
-                            .setContentTitle(notificationContentTitle)
-                            .setContentText(notificationContent)
-                            .setNumber(++notificationNumber)
-                            .setSound(soundUri)
-                            .extend(wearableExtender)
-                            .setOngoing(false)
-                            .setGroup(notificationGroupName)
-                            .setGroupSummary(false);
-
-                    notificationManager.notify(phoneNotificationId, phoneNotificationBuilder.build());
-                    notificationManager.notify(glassNotificationId, wearableNotificationBuilder.build());
+                    sendNotification(computeNotificationContent(notificationLayout, intent));
                 }
             });
         }
@@ -172,6 +144,56 @@ public class GlassMusicRemoteService extends Service {
             sendBroadcast(i);
         }
     };
+
+    public static String computeNotificationContent(String notificationLayout, Intent intent) {
+        String artist = intent.getStringExtra("artist");
+        String track = intent.getStringExtra("track");
+        String album = intent.getStringExtra("album");
+        Integer listPos = intent.getIntExtra("listpos", 0);
+        Long length = intent.getLongExtra("trackLength", 0);
+
+        String duration = "unknown";
+        if (length >= 0) {
+            length = length / 1000;
+
+            duration = String.format("%02d:%02d:%02d", length / 3600, (length % 3600) / 60, length % 60);
+        }
+
+        String notificationContent = notificationLayout.replaceAll("%artist%", artist);
+        notificationContent = notificationContent.replaceAll("%title%", track);
+        notificationContent = notificationContent.replaceAll("%album%", album);
+        notificationContent = notificationContent.replaceAll("%listpos%", listPos.toString());
+
+        return notificationContent.replaceAll("%length%", duration);
+    }
+
+    private void sendNotification(String notificationContent) {
+        NotificationCompat.Builder phoneNotificationBuilder = new NotificationCompat.Builder(myContext)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle(notificationContentTitle)
+                .setContentText(notificationContent)
+                .setNumber(++notificationNumber)
+                .setSound(soundUri)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setGroup(notificationGroupName)
+                .setGroupSummary(true);
+
+        NotificationCompat.Builder wearableNotificationBuilder = new NotificationCompat.Builder(myContext)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setAutoCancel(true)
+                .setContentTitle(notificationContentTitle)
+                .setContentText(notificationContent)
+                .setNumber(++notificationNumber)
+                .setSound(soundUri)
+                .extend(wearableExtender)
+                .setOngoing(false)
+                .setGroup(notificationGroupName)
+                .setGroupSummary(false);
+
+        notificationManager.notify(phoneNotificationId, phoneNotificationBuilder.build());
+        notificationManager.notify(glassNotificationId, wearableNotificationBuilder.build());
+    }
 
     private void setupMusicReceiver() {
         IntentFilter songChangedFilter = new IntentFilter();
@@ -235,6 +257,9 @@ public class GlassMusicRemoteService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        notificationLayout = this.getSharedPreferences(GlassMusicRemoteMain.PREF_FILENAME, 0)
+                .getString("runContent", notificationLayout);
 
         notificationContentTitle = getString(R.string.currently_playing);
         notificationGroupName = getString(R.string.app_name);

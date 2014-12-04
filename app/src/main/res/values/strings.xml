@@ -15,4 +15,8 @@
     <string name="next_action">Next</string>
     <string name="currently_playing">Currently playing</string>
 
+    <string name="notification_format">Notification format</string>
+    <string name="notification_content">-</string>
+    <string name="notification_content_sample">1. D.J. BoBo - Everybody (album Dance with me) 00:03:56</string>
+
 </resources>

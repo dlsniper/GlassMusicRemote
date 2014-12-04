@@ -21,7 +21,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -30,7 +33,6 @@ import java.util.TimerTask;
 
 
 public class GlassMusicRemoteMain extends Activity {
-
 
     public static final String PREF_FILENAME = "GlassMusicRemote";
     private boolean runOnStartup = true;
@@ -66,9 +68,20 @@ public class GlassMusicRemoteMain extends Activity {
     }
 
     private void saveSettings() {
+        EditText notificationContent = (EditText) findViewById(R.id.notificationContent);
+
+        String notificationLayout = notificationContent.getText().toString();
+        if (notificationLayout.isEmpty()) {
+            notificationLayout = "%listpos%. %artist% - %title% (album %album%) %length%";
+        }
+
+        GlassMusicRemoteService.notificationLayout = notificationLayout;
+
         SharedPreferences.Editor editor = getSharedPreferences(PREF_FILENAME, 0).edit();
         editor.putBoolean("enabled", enabled);
         editor.putBoolean("runOnStartup", runOnStartup);
+
+        editor.putString("notificationContent", notificationLayout);
         editor.commit();
     }
 
@@ -79,12 +92,42 @@ public class GlassMusicRemoteMain extends Activity {
         SharedPreferences settings = getSharedPreferences(PREF_FILENAME, 0);
         enabled = settings.getBoolean("enabled", true);
         runOnStartup = settings.getBoolean("runOnStartup", true);
+        GlassMusicRemoteService.notificationLayout = settings.getString("notificationContent", GlassMusicRemoteService.notificationLayout);
 
         if (enabled && !GlassMusicRemoteService.isServiceRunning) {
+
             startService(new Intent(this, GlassMusicRemoteService.class));
         }
 
         setContentView(R.layout.activity_main);
+
+        final Intent demoTrack = new Intent();
+        demoTrack.putExtra("artist", "D.J. BoBo");
+        demoTrack.putExtra("track", "Everybody");
+        demoTrack.putExtra("album", "Dance with me");
+        demoTrack.putExtra("listpos", 1);
+        demoTrack.putExtra("trackLength", Long.valueOf(236000));
+
+        final EditText notificationContent = (EditText) findViewById(R.id.notificationContent);
+        final TextView notificationSample = (TextView) findViewById(R.id.notificationSample);
+
+        notificationContent.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {
+                String content = GlassMusicRemoteService.computeNotificationContent(s.toString(), demoTrack);
+                notificationSample.setText("Sample notification:\n" + content);
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                //Do something or nothing.
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                //Do something or nothing
+            }
+        });
     }
 
     @Override
@@ -93,6 +136,7 @@ public class GlassMusicRemoteMain extends Activity {
 
         Switch enabledSwitch = (Switch) findViewById(R.id.enabled);
         Switch runOnStartupSwitch = (Switch) findViewById(R.id.runOnStartup);
+        EditText notificationContent = (EditText) findViewById(R.id.notificationContent);
 
         enabledSwitch.setChecked(enabled);
         runOnStartupSwitch.setChecked(runOnStartup);
@@ -101,6 +145,7 @@ public class GlassMusicRemoteMain extends Activity {
         }
 
         changePlayState("---");
+        notificationContent.setText(GlassMusicRemoteService.notificationLayout);
 
         final Handler handler = new Handler();
 
@@ -118,6 +163,13 @@ public class GlassMusicRemoteMain extends Activity {
                     }
                 });
             }}, 1200);
+    }
+
+    @Override
+    public void onBackPressed() {
+        saveSettings();
+
+        super.onBackPressed();
     }
 
     @Override
